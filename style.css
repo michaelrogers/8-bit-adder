@@ -1,3 +1,6 @@
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+}
 
 #projectBox {
   box-shadow: 1px 2px 4px grey;
