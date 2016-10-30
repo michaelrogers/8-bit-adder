@@ -1,31 +1,24 @@
 document.addEventListener('DOMContentLoaded', () => {
 	
-	const AND_Gate = (A, B) => {return A && B;}
-
-	const OR_Gate = (A, B) => {return A || B;}
-
-	const NAND_Gate = (A, B) => {return !(A && B);}
-
-	const XOR_Gate = (A, B) => { //XOR constructed using OR gate, NAND gate, and AND gate
-		let orResult = OR_Gate(A,B);
-		let nandResult = NAND_Gate (A,B);
-		return AND_Gate(orResult,nandResult);
-	}
-
+	const AND_Gate = (A, B) => A && B;
+	const OR_Gate = (A, B) => A || B;
+	const NAND_Gate = (A, B) => !(A && B);
+	const XOR_Gate = (A, B) =>  AND_Gate(OR_Gate(A, B), NAND_Gate (A, B));
+	
 	const halfAdder = (A, B) => {
 		//halfAdder constructed using XOR gate and AND gate
-		let sumOut = XOR_Gate(A,B);
-		let carryOut = AND_Gate(A,B);
-		return {sumOut: sumOut, carryOut: carryOut};
+		const sumOut = XOR_Gate(A, B);
+		const carryOut = AND_Gate(A, B);
+		return {sumOut, carryOut};
 	}
 
 	const fullAdder = (carryIn, A, B) => {
 		//fullAdder constructed using two halfAdders;
-		//the input for the first is A,B; 
+		//the input for the first is A, B; 
 		//input for the second is carryIn and sumOut of first half adder
-		let firstHalfAdder = halfAdder(A,B);
-		let secondHalfAdder = halfAdder(carryIn, firstHalfAdder.sumOut);
-		let carryOut = OR_Gate(firstHalfAdder.carryOut,secondHalfAdder.carryOut);
+		const firstHalfAdder = halfAdder(A, B);
+		const secondHalfAdder = halfAdder(carryIn, firstHalfAdder.sumOut);
+		const carryOut = OR_Gate(firstHalfAdder.carryOut, secondHalfAdder.carryOut);
 		// console.table({A, B, firstHalfAdder, secondHalfAdder, carryOut});
 		return {
 			sumOut: secondHalfAdder.sumOut,
@@ -37,46 +30,63 @@ document.addEventListener('DOMContentLoaded', () => {
 		let carryIn = false; //The initial carryIn = false or 0 bit
 		let results = [];
 		let eachFullAdder;
-		for (let x = 0; x < A.length; x++){
-			eachFullAdder = fullAdder(carryIn, A[x], B[x]);
-			results[x] = eachFullAdder.sumOut;
+
+	    // NOTE: Length of firstRow/secondRow should be of identical length
+		A.map((_, i) => {
+			eachFullAdder = fullAdder(carryIn, A[i], B[i]);
+			results[i] = eachFullAdder.sumOut;
 			carryIn = eachFullAdder.carryOut;
-		}
+		});
+
 		illuminateIndicators(results, carryIn);
 	}
 
 	const illuminateIndicators = (results, finalCarryIn) => {
-		let eachIndicator;
-		let ind8 = document.getElementById('ind8');
-		for (let x=0; x<8; x++){
-			eachIndicator = document.getElementById('ind'+ x);
-			results[x] ? eachIndicator.className = "indicator lightOn" : eachIndicator.className = "indicator"; 
-					}
-		finalCarryIn ? ind8.className = "indicator lightOn" : ind8.className = "indicator";
+		let eachIndicatorLight;
+		const finalIndicatorLight = document.querySelector('.indicator'); //Return the left most indicator light
 		
+		results.map((_, i) => {
+			eachIndicatorLight = document.getElementById('ind'+ i);
+			return results[i] ?
+			 		eachIndicatorLight.className = "indicator lightOn" :
+			 		eachIndicatorLight.className = "indicator"; 
+		});
+
+		return finalCarryIn ?
+				finalIndicatorLight.className = "indicator lightOn" :
+				finalIndicatorLight.className = "indicator";
 	}
 
 	const getSwitchValues = () => {
-		let A = [];
-		let B = [];
-		const switches = [].slice.call(document.querySelectorAll('#switchRowA input'));
-		for (let v = 0; v < switches.length; v++){
-			A[v] = document.getElementById('A'+ v).checked;
-			B[v] = document.getElementById('B'+ v).checked;
-		}
+		let A = []; let B = [];
+		const switchesA = [].slice.call(document.querySelectorAll('#switchRowA input')).reverse();
+		const switchesB = [].slice.call(document.querySelectorAll('#switchRowB input')).reverse();
+		
+		if (switchesA.length !== switchesB.length) return false;
+		switchesA.map((_, i)  => {
+			A.push(switchesA[i].checked);
+			B.push(switchesB[i].checked);
+		});
+			
 		addingMachine(A, B);
-	}
-	const clickListener = () => {
-		document.getElementById('projectBox').addEventListener('change', getSwitchValues);
+		convertValueToDecimal(A, B);
 	}
 
-	const init = () => {
-		clickListener();
-		// $('#switchRowA label div').each(function(){$(this).attr("id",)});
+	const convertValueToDecimal = (A, B) => {
+		//Convert boolean arrays into binary integer to make the conversion back to base 10
+		const decimalA = parseInt(A.map(Number).reverse().join(''), 2);
+		const decimalB = parseInt(B.map(Number).reverse().join(''), 2);
+		const decimalTotal = decimalA + decimalB;
+		
+		console.log(decimalA 
+					+ " + " + decimalB 
+					+ " = " + decimalTotal 
+					+ " | Logic " 
+					+ (decimalA + decimalB == decimalTotal)
+		);
 	}
+	
+	document.getElementById('projectBox').addEventListener('change', getSwitchValues);
 
-	init();
-
-});
- // DOMcontentloaded
+}); // DOMcontentloaded
 
